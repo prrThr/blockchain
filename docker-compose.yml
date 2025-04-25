@@ -1,0 +1,16 @@
+services:
+  zerotier:
+    image: zerotier/zerotier:latest
+    container_name: zerotier
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    volumes:
+      - zerotier-data:/var/lib/zerotier-one
+    command: [ "9bee8941b5431cb5" ]
+    restart: unless-stopped
+
+volumes:
+  zerotier-data:
+
