@@ -1,6 +1,7 @@
 services:
   zerotier:
-    image: zerotier/zerotier:latest
+    #image: zerotier/zerotier:latest
+    build: .
     container_name: zerotier
     cap_add:
       - NET_ADMIN
@@ -8,8 +9,11 @@ services:
       - /dev/net/tun
     volumes:
       - zerotier-data:/var/lib/zerotier-one
+      - /caminho/do/script/no/seu/pc:/home/p2p_chat.py
     command: [ "9bee8941b5431cb5" ]
     restart: unless-stopped
+    entrypoint: ["/bin/sh", "-c", "apt update && apt install -y python3.11 python3.11-venv python3-pip && /entrypoint.sh 9bee8941b5431cb5
+    "]
 
 volumes:
   zerotier-data:
