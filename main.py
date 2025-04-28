@@ -5,8 +5,33 @@ PORT = 5000         # Porta padrão de comunicação
 BUFFER_SIZE = 1024  # Tamanho máximo da mensagem
 ENCODING = 'utf-8'  # Codificação de texto
 
-# Pergunta o IP do amigo para enviar mensagem
-peer_ip = input("Digite o IP do peer (ou deixe vazio para só receber mensagens): ").strip()
+peers = { 
+    "Arthur": "10.147.20.9",
+    "Duda": "10.147.20.190",
+    "Gabriel": "123.456.789",
+    "Pedrini": "321.654.987"
+}
+
+print("------------------------------------------------------")
+for idx, nome in enumerate(peers.keys(), start=1):
+    print(f"{idx}. {nome}")
+print(f"{len(peers) + 1}. Só receber mensagens (sem selecionar um peer)")
+opcao = input("Digite o número do peer desejado: ").strip()
+print("------------------------------------------------------")
+
+if opcao.isdigit():
+    opcao = int(opcao)
+    if 1 <= opcao <= len(peers):
+        nome_escolhido = list(peers.keys())[opcao - 1]
+        peer_ip = peers[nome_escolhido]
+        print(f"Iniciando conversa com {nome_escolhido} ({peer_ip})...")
+    elif opcao == len(peers) + 1:
+        peer_ip = ""
+        print("Iniciando conversa sem peer, apenas recebendo mensagens.")
+    else:
+        print("Opção inválida.")
+else:
+    print("Opção inválida.")
 
 def receber_mensagens():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
