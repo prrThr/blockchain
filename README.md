@@ -3,6 +3,7 @@
 - [x] Criar conta no **ZeroTier**
 - [x] Efetuar ping remoto entre hosts
 - [ ] Criar script em Python para fazer troca de mensagens P2P
+    - O script ainda está com problemas. Necessário fazer mais testes com computadores diferentes
 - [ ] Definição do esqueleto do código para blockchain e ferramentas
 - [ ] Implementações
 - [ ] Testes locais
@@ -16,6 +17,8 @@
 - [Dockerfile](https://github.com/zerotier/ZeroTierOne/blob/dev/ext/installfiles/linux/zerotier-containerized/Dockerfile)
 
 # Usando Docker
+
+### Vertificando se funcionou
 - Em um diretório com o arquivo `docker-compose.yml`, execute `docker compose up -d`
 - Verifique informações úteis utilizando `docker-compose -f`
 - Execute `docker exec zerotier zerotier-cli listnetwork`
@@ -26,4 +29,8 @@
     - **OK**: Autorizado e conectado
     - **zt3jn4uxia**: Interface 
     - **10.x.x.x**: IP atribuído
+
+### Rodando o chat P2P
+- Entre no container com `docker exec -it zerotier bash`
+- Execute `python3 home/p2p_chat.py` para executar o script 
 
