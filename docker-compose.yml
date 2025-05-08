@@ -12,8 +12,6 @@ services:
       - ./main.py:/home/p2p_chat.py
     command: [ "9bee8941b5431cb5" ]
     restart: unless-stopped
-    entrypoint: ["/bin/sh", "-c", "apt update && apt install -y python3.11 python3.11-venv python3-pip && /entrypoint.sh 9bee8941b5431cb5
-    "]
 
 volumes:
   zerotier-data:
