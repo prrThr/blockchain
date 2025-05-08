@@ -2,8 +2,7 @@
 - [x] Configuração de ambiente
 - [x] Criar conta no **ZeroTier**
 - [x] Efetuar ping remoto entre hosts
-- [ ] Criar script em Python para fazer troca de mensagens P2P
-    - O script ainda está com problemas. Necessário fazer mais testes com computadores diferentes
+- [x] Criar script em Python para fazer troca de mensagens P2P
 - [ ] Definição do esqueleto do código para blockchain e ferramentas
 - [ ] Implementações
 - [ ] Testes locais
@@ -18,19 +17,22 @@
 
 # Usando Docker
 
-### Vertificando se funcionou
-- Em um diretório com o arquivo `docker-compose.yml`, execute `docker compose up -d`
+### Verificando se funcionou
+- Abra o terminal no diretório desde projeto
+- Antes de subir o container, altere o `docker-compose.yml` colocando o caminho completo do projeto atual, assim, o container irá sincronizar o `main.py` desde projeto com o `p2p_chat.py` dentro do container
+- Execute `docker compose up -d` para subir um container de acordo com o `docker-compose.yml`
 - Verifique informações úteis utilizando `docker-compose -f`
 - Execute `docker exec zerotier zerotier-cli listnetwork`
     - Isto irá executar o `zerotier-cli` dentro do container e executar o command `listnetworks`
-- Se funcionar, irá retornar algo como *200 listnetworks 9bee8941b5431cb5 myNetworkName b6:d1:6d:9e:73:89 **OK PRIVATE** zt3jn4uxia 10.x.x.x*
-    - **9bee8941b5431cb5**: conectado à rede 9bee8941b5431cb5 (com o nome *myNetwork*)
-    - **b6:d1:6d:9e:73:89**: MAC virtual
-    - **OK**: Autorizado e conectado
-    - **zt3jn4uxia**: Interface 
-    - **10.x.x.x**: IP atribuído
+- Se funcionar, irá retornar algo como *200 listnetworks 9bee8941b5431cb5 myNetworkName b6:d1:6d:9e:73:89 OK PRIVATE zt3jn4uxia 10.x.x.x*
+
+#### Explicação do retorno a cima
+- **9bee8941b5431cb5**: conectado à rede 9bee8941b5431cb5 (com o nome *myNetwork*)
+- **b6:d1:6d:9e:73:89**: MAC virtual
+- **OK**: Autorizado e conectado
+- **zt3jn4uxia**: Interface 
+- **10.x.x.x**: IP atribuído
 
 ### Rodando o chat P2P
-- Entre no container com `docker exec -it zerotier bash`
-- Execute `python3 home/p2p_chat.py` para executar o script 
+- Execute `docker exec -it zerotier python3 home/p2p_chat.py`
 
