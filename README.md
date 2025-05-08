@@ -19,7 +19,6 @@
 
 ### Verificando se funcionou
 - Abra o terminal no diretório desde projeto
-- Antes de subir o container, altere o `docker-compose.yml` colocando o caminho completo do projeto atual, assim, o container irá sincronizar o `main.py` desde projeto com o `p2p_chat.py` dentro do container
 - Execute `docker compose up -d` para subir um container de acordo com o `docker-compose.yml`
 - Verifique informações úteis utilizando `docker-compose -f`
 - Execute `docker exec zerotier zerotier-cli listnetwork`
