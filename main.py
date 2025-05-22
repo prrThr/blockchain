@@ -1,81 +1,89 @@
-import socket
-import threading
+from typing import Dict, List
 
-PORT = 5000         # Porta padrão de comunicação
-BUFFER_SIZE = 1024  # Tamanho máximo da mensagem
-ENCODING = 'utf-8'  # Codificação de texto
+from chain import (
+    get_balance,
+    load_chain,
+    make_transaction,
+    mine_block,
+    on_valid_block_callback,
+    print_chain,
+)
+from network import start_server
+from utils import load_config
 
-peers = { 
-    "Arthur": "10.147.20.9",
-    "Duda": "10.147.20.190",
-    "Gabriel": "10.147.20.150",
-    "Pedrini": "10.147.20.1",
-    "Igor": "10.147.20.220"
-}
-
-print("------------------------------------------------------")
-for idx, nome in enumerate(peers.keys(), start=1):
-    print(f"{idx}. {nome}")
-print(f"{len(peers) + 1}. Só receber mensagens (sem selecionar um peer)")
-opcao = input("Digite o número do peer desejado: ").strip()
-print("------------------------------------------------------")
-
-if opcao.isdigit():
-    opcao = int(opcao)
-    if 1 <= opcao <= len(peers):
-        nome_escolhido = list(peers.keys())[opcao - 1]
-        peer_ip = peers[nome_escolhido]
-        print(f"Iniciando conversa com {nome_escolhido} ({peer_ip})...")
-    elif opcao == len(peers) + 1:
-        peer_ip = ""
-        print("Iniciando conversa sem peer, apenas recebendo mensagens.")
-    else:
-        print("Opção inválida.")
-else:
-    print("Opção inválida.")
-
-def receber_mensagens():
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind(('', PORT))
-    server_socket.listen(5)
-    print(f"[Servidor] Aguardando mensagens na porta {PORT}...")
-
-    while True:
-        conn, addr = server_socket.accept()
-        data = conn.recv(BUFFER_SIZE)
-        print(f"\n[Mensagem recebida de {addr[0]}]: {data.decode(ENCODING)}")
-        conn.close()
-
-def enviar_mensagens():
-    while True:
-        msg = input("\nDigite a mensagem para enviar (ou 'sair' para terminar): ")
-        if msg.lower() == 'sair':
-            print("Encerrando envio de mensagens.")
-            break
-        if not peer_ip:
-            print("Nenhum peer IP configurado para envio.")
-            continue
-        try:
-            client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            client_socket.connect((peer_ip, PORT))
-            client_socket.send(msg.encode(ENCODING))
-            client_socket.close()
-            print("[Mensagem enviada com sucesso!]")
-        except Exception as e:
-            print(f"[Erro ao enviar mensagem]: {e}")
 
 if __name__ == "__main__":
-    thread_receber = threading.Thread(target=receber_mensagens, daemon=True)
-    thread_receber.start()
+    """
+    Exemplo de config:
+    {
+        "node_id": "george_linux", // nome exclusivo para o computador em que o código será executado
+        "host": "172.29.20.2", // IP fornecido pelo zerotier para o computador em que o código será executado
+        "port": 5002, // porta padrão estabelecida para toda a rede P2P
+        "difficulty": 4, // dificuldade de mineração
+        "reward": 10, // recompensa pela mineração
+        "blockchain_file": "db/blockchain.json", // arquivo para salvar blockchain
+        "peers_file": "configs/peers.txt" // arquivo para listar os IPs dos demais pares
+    }
+    """
+    config = load_config()
+    blockchain = load_chain(config["blockchain_file"])
+    transactions: List[Dict] = []
 
-    # Se quiser também enviar, inicia o envio
-    if peer_ip:
-        enviar_mensagens()
-    else:
-        # Se o usuário não configurou um IP, apenas mantém a thread de recebimento viva
-        try:
-            while True:
-                pass
-        except KeyboardInterrupt:
-            print("\nEncerrado.")
+    start_server(
+        config["host"],
+        config["port"],
+        blockchain,
+        config["difficulty"],
+        transactions,
+        config["blockchain_file"],
+        on_valid_block_callback,
+    )
 
+    print("=== SimpleCoin CLI ===")
+    while True:
+        print("\n1. Add transaction")
+        print("2. Mine block")
+        print("3. View blockchain")
+        print("4. Get balance")
+        print("5. Exit")
+        choice = input("> ").strip()
+
+        if choice == "1":
+            sender = input("Sender: ")
+            recipient = input("Recipient: ")
+            amount = input("Amount: ")
+            make_transaction(
+                sender,
+                recipient,
+                amount,
+                transactions,
+                config["peers_file"],
+                config["port"],
+            )
+
+        elif choice == "2":
+            mine_block(
+                transactions,
+                blockchain,
+                config["node_id"],
+                config["reward"],
+                config["difficulty"],
+                config["blockchain_file"],
+                config["peers_file"],
+                config["port"],
+            )
+
+        elif choice == "3":
+            print_chain(blockchain)
+
+        elif choice == "4":
+            node_id = input("Node ID: ")
+            balance = get_balance(node_id, blockchain)
+            print(f"[i] The balance of {node_id} is {balance}.")
+
+        elif choice == "5":
+            print("Exiting...")
+            break
+
+        else:
+            print("[!] Invalid choice.")

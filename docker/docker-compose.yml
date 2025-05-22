@@ -9,7 +9,7 @@ services:
       - /dev/net/tun
     volumes:
       - zerotier-data:/var/lib/zerotier-one
-      - ./main.py:/home/p2p_chat.py
+      - ./p2p_chat.py:/home/p2p_chat.py
     command: [ "9bee8941b5431cb5" ]
     restart: unless-stopped
 
