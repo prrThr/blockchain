@@ -1,0 +1,13 @@
+1. Duplique este arquivo no diretório atual
+2. Nomeie o novo arquivo para "node_config.json"
+3. Altere os seguintes valores conforme suas configurações
+4. No novo arquivo deixe apenas a estrutura do json, removendo estas 4 primeiras linhas
+{
+    "node_id": "Seu_Node_ID_do_ZeroTier",
+    "host": "Seu_IP_do_ZeroTier",
+    "port": 5002,
+    "difficulty": 4,
+    "reward": 10,
+    "blockchain_file": "db/blockchain.json",
+    "peers_file": "configs/peers.txt"
+}

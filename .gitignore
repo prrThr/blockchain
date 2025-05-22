@@ -1,3 +1,8 @@
+# Peers config
+configs/peers.txt
+configs/node_config.json
+db/blockchain.json
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
