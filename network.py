@@ -27,18 +27,6 @@ def broadcast_block(block: Block, peers_fpath: str, port: int):
             pass
 
 
-def broadcast_block(block: Block, peers_fpath: str, port: int):
-    print("Broadcasting transaction...")
-    for peer in list_peers(peers_fpath):
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect((peer, port))
-            s.send(json.dumps({"type": "block", "data": block.as_dict()}).encode())
-            s.close()
-        except Exception:
-            pass
-
-
 def broadcast_transaction(tx: Dict, peers_fpath: str, port: int):
     for peer in list_peers(peers_fpath):
         try:
