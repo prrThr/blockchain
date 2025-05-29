@@ -58,6 +58,13 @@ def mine_block(
         reward=reward,
         difficulty=difficulty,
     )
+    if new_block.index != len(blockchain):
+        print("[!] Block index mismatch. Aborting local block addition.")
+        return
+    if new_block.prev_hash != blockchain[-1].hash:
+        print("[!] Local chain changed before block was added. Aborting.")
+        return
+
     blockchain.append(new_block)
     transactions.clear()
     save_chain(blockchain_fpath, blockchain)

@@ -16,7 +16,7 @@ def list_peers(fpath: str):
 
 
 def broadcast_block(block: Block, peers_fpath: str, port: int):
-    print("Broadcasting transaction...")
+    print("Broadcasting block...")
     for peer in list_peers(peers_fpath):
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -63,7 +63,7 @@ def resolve_fork(local_chain: List[Block], received_chain: List[Block], difficul
     """
     print(f"[FORK DETECTED] Local chain length: {len(local_chain)}, Received chain length: {len(received_chain)}")
     
-    # Rule 1: Longest valid chain wins
+    # Regra 1: Maior chain valida ganha
     if len(received_chain) > len(local_chain):
         if is_valid_chain(received_chain, difficulty):
             print("[FORK RESOLVED] Adopting longer chain from peer")
@@ -72,12 +72,19 @@ def resolve_fork(local_chain: List[Block], received_chain: List[Block], difficul
             print("[FORK RESOLVED] Received chain invalid, keeping local chain")
             return local_chain
     
-    # Rule 2: If same length, keep local chain (first-seen rule)
+    # Regra 2: Se forem do mesmo tamanho, mantém a chain local (first-seen rule)
     elif len(received_chain) == len(local_chain):
-        print("[FORK RESOLVED] Same length chains, keeping local chain")
-        return local_chain
-    
-    # Rule 3: Local chain is longer
+        local_last_hash = local_chain[-1].hash
+        received_last_hash = received_chain[-1].hash
+
+        if received_last_hash < local_last_hash:
+            print("[FORK RESOLVED] Same length, adopting chain with lower hash")
+            return received_chain
+        else:
+            print("[FORK RESOLVED] Same length, keeping local chain")
+            return local_chain
+        
+    # Regra 3: Chain local é maior
     else:
         print("[FORK RESOLVED] Local chain is longer, keeping local chain")
         return local_chain
@@ -95,63 +102,73 @@ def handle_client(
     try:
         data = conn.recv(4096).decode()
         msg = json.loads(data)
-        
+
         if msg["type"] == "block":
             received_block = create_block_from_dict(msg["data"])
             expected_hash = hash_block(received_block)
-            
-            # First, validate the received block
-            if (received_block.hash != expected_hash or 
+
+            if (received_block.hash != expected_hash or
                 not received_block.hash.startswith("0" * difficulty)):
                 print(f"[!] Invalid block received from {addr}")
                 conn.close()
                 return
-            
-            # Check if this block extends our current chain
-            if received_block.prev_hash == blockchain[-1].hash:
-                # This block extends our chain normally
-                if received_block.index == len(blockchain):
+
+            # --- CASOS POSSÍVEIS ---
+
+            local_length = len(blockchain)
+
+            if received_block.index == local_length:
+                # Bloco esperado: próximo da cadeia
+                if received_block.prev_hash == blockchain[-1].hash:
+
+                    if received_block.index < len(blockchain):
+                        # Já existe bloco nesse índice
+                        if blockchain[received_block.index].hash != received_block.hash:
+                            print(f"[FORK] Conflict on block index {received_block.index} — requesting full chain")
+                            request_full_chain(addr, blockchain, difficulty, blockchain_fpath, on_valid_block_callback)
+                        else:
+                            print(f"[i] Duplicate block received (same hash), ignoring.")
+                        conn.close()
+                        return
+
                     blockchain.append(received_block)
                     on_valid_block_callback(blockchain_fpath, blockchain)
                     print(f"[✓] New valid block added from {addr}")
                 else:
-                    print(f"[!] Block index mismatch from {addr}")
-            
-            # Check if we have a fork situation
-            elif received_block.index < len(blockchain):
-                # We might have a fork - request the full chain from peer
-                print(f"[FORK] Potential fork detected with {addr}")
-                request_full_chain(addr, blockchain, difficulty, blockchain_fpath, on_valid_block_callback)
-            
-            else:
-                print(f"[!] Block doesn't fit in current chain from {addr}")
-        
+                    print(f"[FORK] Received block with same index but different prev_hash from {addr}")
+                    request_full_chain(addr, blockchain, difficulty, blockchain_fpath, on_valid_block_callback)
+            elif received_block.index < local_length:
+                if blockchain[received_block.index].hash != received_block.hash:
+                    print(f"[FORK] Conflict on block index {received_block.index} from {addr}")
+                    request_full_chain(addr, blockchain, difficulty, blockchain_fpath, on_valid_block_callback)
+                else:
+                    print(f"[i] Received known block from {addr} — ignoring.")
+            elif received_block.index > local_length:
+                print(f"[!] Received future block (index {received_block.index}) from {addr} — ignoring.")
+
         elif msg["type"] == "tx":
             tx = msg["data"]
             if tx not in transactions:
                 transactions.append(tx)
                 print(f"[+] Transaction received from {addr}")
-        
+
         elif msg["type"] == "chain_request":
-            # Send our full chain to the requesting peer
             send_full_chain(conn, blockchain)
-        
+
         elif msg["type"] == "full_chain":
-            # Received a full chain for fork resolution
             received_chain_data = msg["data"]
             received_chain = [create_block_from_dict(block_data) for block_data in received_chain_data]
-            
-            # Resolve the fork
+
             new_chain = resolve_fork(blockchain, received_chain, difficulty)
             if new_chain != blockchain:
                 blockchain.clear()
                 blockchain.extend(new_chain)
                 on_valid_block_callback(blockchain_fpath, blockchain)
                 print("[CHAIN REPLACED] Blockchain updated after fork resolution")
-    
+
     except Exception as e:
         print(f"Exception when handling client. Exception: {e}. {traceback.format_exc()}")
-    
+
     conn.close()
 
 
@@ -174,7 +191,6 @@ def request_full_chain(
 ):
     """Request full chain from a peer for fork resolution"""
     try:
-        # Extract IP from addr tuple if needed
         if isinstance(peer_addr, tuple):
             peer_ip = peer_addr[0]
         else:
@@ -184,19 +200,16 @@ def request_full_chain(
         s.settimeout(10)
         s.connect((peer_ip, 5002))  # Assuming standard port
         
-        # Request the full chain
         request = json.dumps({"type": "chain_request"})
         s.send(request.encode())
         
-        # Receive the response
-        data = s.recv(8192).decode()  # Larger buffer for full chain
+        data = s.recv(8192).decode()
         response = json.loads(data)
         
         if response["type"] == "full_chain":
             received_chain_data = response["data"]
             received_chain = [create_block_from_dict(block_data) for block_data in received_chain_data]
             
-            # Resolve the fork
             new_chain = resolve_fork(blockchain, received_chain, difficulty)
             if new_chain != blockchain:
                 blockchain.clear()
